@@ -289,7 +289,11 @@ function hostReveal(){
 }
 function hostFinal(){ db.ref('rooms/'+roomCode).update({phase:'final'}); }
 function hostSetTime(s){ db.ref('rooms/'+roomCode).update({qSeconds:s}); }
-function hostEnd(){ if(confirm('End this game and wipe the room?')){ db.ref('rooms/'+roomCode).remove(); localStorage.removeItem('mm_host'); localStorage.removeItem('mm_key'); location.reload(); } }
+function hostEnd(){ if(confirm('Close this room for everyone and wipe it? This can’t be undone.')){ db.ref('rooms/'+roomCode).remove(); localStorage.removeItem('mm_host'); localStorage.removeItem('mm_key'); location.reload(); } }
+function hostPause(){ if(!data||data.phase!=='question'||!data.current||data.current.paused)return; if(hostTO){clearTimeout(hostTO);hostTO=null;} const left=Math.max(0,(data.current.deadline||Date.now())-Date.now()); db.ref('rooms/'+roomCode+'/current').update({paused:true,pausedLeft:left}); }
+function hostResume(){ if(!data||!data.current||!data.current.paused)return; const left=data.current.pausedLeft||0; if(hostTO){clearTimeout(hostTO);hostTO=null;} db.ref('rooms/'+roomCode+'/current').update({paused:false,pausedLeft:null,deadline:Date.now()+left}); hostTO=setTimeout(hostReveal,left+300); }
+function hostEndGame(){ if(confirm('End the game now and jump to the final standings? Scores are kept.')){ if(hostTO){clearTimeout(hostTO);hostTO=null;} hostFinal(); } }
+function hostClear(){ if(confirm('Clear all scores and send everyone back to the lobby? Players stay in the room.')){ if(hostTO){clearTimeout(hostTO);hostTO=null;} resetScores().then(()=>db.ref('rooms/'+roomCode).update({phase:'lobby',qIndex:-1,current:null})); } }
 
 /* ===================== PLAYER ===================== */
 function playerJoin(code,name){
@@ -305,6 +309,7 @@ function playerJoin(code,name){
 }
 function playerAnswer(i){
   if(!data||data.phase!=='question')return;
+  if(data.current&&data.current.paused)return;
   const qi=data.qIndex;
   if(myAnswer(qi)!=null)return;
   db.ref('rooms/'+roomCode+'/answers/'+qi+'/'+me.pid).set({choice:i,at:Date.now()});
@@ -375,16 +380,24 @@ function renderHost(){
     wireHost();return;
   }
   if(data.phase==='question'){
-    const c=data.current, ans=answeredCount(), rem=Math.max(0,Math.ceil((c.deadline-Date.now())/1000)), frac=clamp((c.deadline-Date.now())/((data.qSeconds||20)*1000),0,1);
+    const c=data.current, pz=!!c.paused, ans=answeredCount();
+    const leftMs=pz?(c.pausedLeft||0):Math.max(0,c.deadline-Date.now());
+    const rem=Math.max(0,Math.ceil(leftMs/1000)), frac=clamp(leftMs/((data.qSeconds||20)*1000),0,1);
     app.innerHTML=
       hdr(data.qIndex)+
       '<div class="card">'+(c.dbl?'<div class="dblflag">★ Final Round · Double points ★</div>':'')+
+        (pz?'<div class="dblflag" style="color:var(--wisteria)">⏸ Paused</div>':'')+
         (c.art&&ART[c.art]?'<div class="art">'+ART[c.art]+'</div>':'')+
         '<div class="tag">'+esc(c.cat)+'</div><div class="prompt">'+c.prompt+'</div>'+
         '<div class="timerbar"><i style="width:'+(frac*100)+'%"></i></div>'+
         '<div style="display:flex;justify-content:space-between;margin-top:6px"><span class="pill">⏱ <span class="n">'+rem+'s</span></span><span class="pill">✍️ <span class="n">'+ans+'</span> / '+players.length+'</span></div>'+
         '<div class="opts">'+c.options.map((o,i)=>'<div class="opt host '+'abcd'[i]+'"><span class="lk">'+L[i]+'</span>'+esc(o)+'</div>').join('')+'</div>'+
-        '<div class="row" style="margin-top:16px"><button class="btn primary" id="revealBtn">Reveal →</button><button class="btn" id="endBtn" style="font-size:.78rem">End room</button></div>'+
+        '<div class="row" style="margin-top:16px">'+
+          (pz?'<button class="btn primary" id="resumeBtn">▶ Resume</button><button class="btn" id="revealBtn">Reveal →</button>'
+             :'<button class="btn primary" id="revealBtn">Reveal →</button><button class="btn" id="pauseBtn">⏸ Pause</button>')+
+          '<button class="btn" id="endGameBtn" style="font-size:.82rem">End game</button>'+
+        '</div>'+
+        '<div style="margin-top:10px"><button class="btn" id="endBtn" style="font-size:.74rem;padding:6px 11px;opacity:.75">Close room</button></div>'+
       '</div>';
     wireHost();return;
   }
@@ -397,14 +410,16 @@ function renderHost(){
         '<div class="opts">'+c.options.map((o,i)=>'<div class="opt '+'abcd'[i]+(i===c.correct?' right':' dim')+'"><span class="lk">'+L[i]+'</span>'+esc(o)+'</div>').join('')+'</div>'+
         '<p class="sub" style="margin-top:12px">'+(st.correct||0)+' of '+(st.answered||0)+' correct.</p></div>'+
       '<div class="card"><div class="tag">'+(data.qIndex>=QUESTIONS.length-1?'Final standings':'Leaderboard')+'</div>'+listHtml(lb,null)+'</div>'+
-      '<div class="row" style="margin-top:4px"><button class="btn primary big" id="nextBtn">'+(data.qIndex>=QUESTIONS.length-1?'Final Results →':'Next Question →')+'</button><button class="btn" id="endBtn" style="font-size:.78rem">End room</button></div>';
+      '<div class="row" style="margin-top:4px"><button class="btn primary big" id="nextBtn">'+(data.qIndex>=QUESTIONS.length-1?'Final Results →':'Next Question →')+'</button>'+
+      (data.qIndex>=QUESTIONS.length-1?'':'<button class="btn" id="endGameBtn" style="font-size:.82rem">End game</button>')+
+      '<button class="btn" id="endBtn" style="font-size:.74rem;opacity:.75">Close room</button></div>';
     wireHost();return;
   }
   if(data.phase==='final'){
     const lb=board(20), w=winners(lb);
     app.innerHTML='<h1 class="center">Final Results</h1>'+
       '<div class="card center">'+winBanner(w)+listHtml(lb,null)+'</div>'+
-      '<div class="row"><button class="btn" id="againBtn">↺ Play again (same players)</button><button class="btn" id="endBtn">End room</button></div>';
+      '<div class="row"><button class="btn primary" id="clearBtn">↺ Back to lobby (reset scores)</button><button class="btn" id="endBtn">Close room</button></div>';
     if(w.length===1) confetti();
     wireHost();return;
   }
@@ -424,15 +439,17 @@ function renderPlayer(){
     byId('leaveBtn',playerLeave);return;
   }
   if(data.phase==='question'){
-    const c=data.current, qi=data.qIndex, mine=myAnswer(qi), done=mine!=null;
-    const rem=Math.max(0,Math.ceil((c.deadline-Date.now())/1000)), frac=clamp((c.deadline-Date.now())/((data.qSeconds||20)*1000),0,1);
+    const c=data.current, qi=data.qIndex, mine=myAnswer(qi), done=mine!=null, pz=!!c.paused;
+    const leftMs=pz?(c.pausedLeft||0):Math.max(0,c.deadline-Date.now());
+    const rem=Math.max(0,Math.ceil(leftMs/1000)), frac=clamp(leftMs/((data.qSeconds||20)*1000),0,1);
     app.innerHTML=
       '<div style="display:flex;justify-content:space-between"><span class="kicker">Q'+(qi+1)+' / '+QUESTIONS.length+'</span><span class="pill">⏱ <span class="n">'+rem+'s</span></span></div>'+
       '<div class="card">'+(c.dbl?'<div class="dblflag">★ Double points ★</div>':'')+
+        (pz?'<div class="dblflag" style="color:var(--wisteria)">⏸ Paused by host</div>':'')+
         '<div class="tag">'+esc(c.cat)+'</div><div class="prompt" style="font-size:1.1rem">'+c.prompt+'</div>'+
         '<div class="timerbar"><i style="width:'+(frac*100)+'%"></i></div>'+
-        '<div class="opts">'+c.options.map((o,i)=>{const pk=done&&mine===i,dm=done&&!pk;return '<button class="opt '+'abcd'[i]+(pk?' pick':'')+(dm?' dim':'')+'" data-ans="'+i+'"'+(done?' disabled':'')+'><span class="lk">'+L[i]+'</span>'+esc(o)+'</button>';}).join('')+'</div>'+
-        (done?'<p class="sub center" style="margin-top:12px">Locked in — hang tight! ✅</p>':'<p class="hint center" style="margin-top:12px">Tap your answer. Faster correct = more points.</p>')+
+        '<div class="opts">'+c.options.map((o,i)=>{const pk=done&&mine===i,dm=done&&!pk;return '<button class="opt '+'abcd'[i]+(pk?' pick':'')+(dm?' dim':'')+'" data-ans="'+i+'"'+((done||pz)?' disabled':'')+'><span class="lk">'+L[i]+'</span>'+esc(o)+'</button>';}).join('')+'</div>'+
+        (pz?'<p class="sub center" style="margin-top:12px">Paused — hang tight ⏸</p>':(done?'<p class="sub center" style="margin-top:12px">Locked in — hang tight! ✅</p>':'<p class="hint center" style="margin-top:12px">Tap your answer. Faster correct = more points.</p>'))+
       '</div>';
     wirePlayer();return;
   }
@@ -469,7 +486,8 @@ function listHtml(lb,meName){
 function winBanner(w){ if(!w.length)return '<div class="winner" style="font-size:clamp(1.6rem,5vw,2rem)">Game over</div>'; if(w.length===1)return '<div class="winner">🎃 '+esc(w[0].name)+' wins! 🎃</div>'; return '<div class="winner" style="font-size:clamp(1.6rem,5vw,2rem)">It’s a tie!</div>'; }
 
 function wireHost(){
-  byId('startBtn',hostStart); byId('revealBtn',hostReveal); byId('nextBtn',()=>hostNext()); byId('againBtn',hostStart); byId('endBtn',hostEnd);
+  byId('startBtn',hostStart); byId('revealBtn',hostReveal); byId('nextBtn',()=>hostNext()); byId('endBtn',hostEnd);
+  byId('pauseBtn',hostPause); byId('resumeBtn',hostResume); byId('endGameBtn',hostEndGame); byId('clearBtn',hostClear);
   document.querySelectorAll('[data-sec]').forEach(b=>b.addEventListener('click',e=>hostSetTime(+e.currentTarget.dataset.sec)));
 }
 function wirePlayer(){ document.querySelectorAll('[data-ans]').forEach(b=>b.addEventListener('click',e=>playerAnswer(+e.currentTarget.dataset.ans))); }
