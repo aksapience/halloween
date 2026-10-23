@@ -259,7 +259,7 @@ function hostNext(force){
   const qSeconds=(data&&data.qSeconds)||20;
   db.ref('rooms/'+roomCode).update({
     phase:'question', qIndex:qi,
-    current:{cat:q.cat,art:q.art||null,prompt:q.prompt,options,dbl:!!q.dbl,deadline:Date.now()+qSeconds*1000,correct:null,stats:null}
+    current:{cat:q.cat,art:q.art||null,prompt:q.prompt,options,dbl:!!q.dbl,link:q.link||null,linkLabel:q.linkLabel||null,deadline:Date.now()+qSeconds*1000,correct:null,stats:null}
   });
   sfxOrgan();
   hostTO=setTimeout(hostReveal,qSeconds*1000+300);
@@ -389,6 +389,7 @@ function renderHost(){
         (pz?'<div class="dblflag" style="color:var(--wisteria)">⏸ Paused</div>':'')+
         (c.art&&ART[c.art]?'<div class="art">'+ART[c.art]+'</div>':'')+
         '<div class="tag">'+esc(c.cat)+'</div><div class="prompt">'+c.prompt+'</div>'+
+        (c.link?'<div style="margin:6px 0 10px"><a class="btn violet" href="'+esc(c.link)+'" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">'+esc(c.linkLabel||'▶ Play clip')+'</a></div>':'')+
         '<div class="timerbar"><i style="width:'+(frac*100)+'%"></i></div>'+
         '<div style="display:flex;justify-content:space-between;margin-top:6px"><span class="pill">⏱ <span class="n">'+rem+'s</span></span><span class="pill">✍️ <span class="n">'+ans+'</span> / '+players.length+'</span></div>'+
         '<div class="opts">'+c.options.map((o,i)=>'<div class="opt host '+'abcd'[i]+'"><span class="lk">'+L[i]+'</span>'+esc(o)+'</div>').join('')+'</div>'+
@@ -407,6 +408,7 @@ function renderHost(){
       hdr(data.qIndex)+
       '<div class="card"><div class="tag">'+esc(c.cat)+(c.dbl?' · ★ Double':'')+'</div>'+
         '<div class="prompt" style="font-size:1.2rem">'+c.prompt+'</div>'+
+        (c.link?'<div style="margin:2px 0 8px"><a class="btn violet" href="'+esc(c.link)+'" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;font-size:.82rem">'+esc(c.linkLabel||'▶ Replay clip')+'</a></div>':'')+
         '<div class="opts">'+c.options.map((o,i)=>'<div class="opt '+'abcd'[i]+(i===c.correct?' right':' dim')+'"><span class="lk">'+L[i]+'</span>'+esc(o)+'</div>').join('')+'</div>'+
         '<p class="sub" style="margin-top:12px">'+(st.correct||0)+' of '+(st.answered||0)+' correct.</p></div>'+
       '<div class="card"><div class="tag">'+(data.qIndex>=QUESTIONS.length-1?'Final standings':'Leaderboard')+'</div>'+listHtml(lb,null)+'</div>'+
