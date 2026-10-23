@@ -138,6 +138,8 @@ window.FIREBASE_CONFIG = {
 
   .brand{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:28px;color:var(--gray);font-size:.78rem}
   .brand .mark{font-weight:700;letter-spacing:.02em;color:#fff;text-transform:lowercase}
+  .musicbtn{position:fixed;top:calc(12px + env(safe-area-inset-top,0));right:calc(12px + env(safe-area-inset-right,0));z-index:50;width:42px;height:42px;border-radius:50%;background:var(--panel-2);border:1px solid var(--line);font-size:1.05rem;display:none;align-items:center;justify-content:center;padding:0}
+  .musicbtn:hover{background:#3a3447;box-shadow:0 0 12px rgba(90,45,130,.4)}
   .conn{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:40;background:#2a1620;border:1px solid var(--blood);
     color:#ffd4da;border-radius:999px;padding:7px 15px;font-size:.78rem;display:none}
   .confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
@@ -154,6 +156,7 @@ window.FIREBASE_CONFIG = {
 <div class="wrap"><div class="main" id="app"><p class="sub center">Loading…</p></div>
   <div class="brand"><span>Hosted by</span><span class="mark">sapience ai</span></div>
 </div>
+<button class="musicbtn" id="musicToggle" aria-label="Toggle background music" title="Music off">🔇</button>
 <div class="conn" id="conn">Reconnecting…</div>
 <div id="confettiHost"></div>
 
@@ -163,32 +166,36 @@ window.FIREBASE_CONFIG = {
 /* ===================== CONTENT ===================== */
 const ART={
  horror:'<svg viewBox="0 0 120 120" fill="none"><circle cx="58" cy="60" r="34" stroke="#E8701A" stroke-width="4"/><circle cx="58" cy="60" r="7" fill="#E8701A"/><g fill="#ffa24d"><circle cx="58" cy="34" r="6"/><circle cx="84" cy="60" r="6"/><circle cx="58" cy="86" r="6"/><circle cx="32" cy="60" r="6"/></g><path d="M84 84c0-9 6-15 13-15s13 6 13 15v20l-4-3-4 3-5-3-4 3-5-3-4 3z" fill="#FFFBF4"/><circle cx="93" cy="82" r="2" fill="#222"/><circle cx="102" cy="82" r="2" fill="#222"/></svg>',
- music:'<svg viewBox="0 0 120 120" fill="none"><circle cx="54" cy="64" r="36" fill="#2f2a3b" stroke="#5A2D82" stroke-width="3"/><circle cx="54" cy="64" r="19" fill="none" stroke="#D7C6F7" stroke-width="2" opacity=".6"/><circle cx="54" cy="64" r="7" fill="#E8701A"/><path d="M80 30v30" stroke="#7A9B7E" stroke-width="4" stroke-linecap="round"/><path d="M80 30c8-2 14 0 14 0" stroke="#7A9B7E" stroke-width="4" stroke-linecap="round"/><circle cx="76" cy="60" r="6" fill="#7A9B7E"/></svg>'
+ music:'<svg viewBox="0 0 120 120" fill="none"><circle cx="54" cy="64" r="36" fill="#2f2a3b" stroke="#5A2D82" stroke-width="3"/><circle cx="54" cy="64" r="19" fill="none" stroke="#D7C6F7" stroke-width="2" opacity=".6"/><circle cx="54" cy="64" r="7" fill="#E8701A"/><path d="M80 30v30" stroke="#7A9B7E" stroke-width="4" stroke-linecap="round"/><path d="M80 30c8-2 14 0 14 0" stroke="#7A9B7E" stroke-width="4" stroke-linecap="round"/><circle cx="76" cy="60" r="6" fill="#7A9B7E"/></svg>',
+ candy:'<svg viewBox="0 0 120 120" fill="none"><ellipse cx="60" cy="60" rx="24" ry="20" fill="#E8701A"/><path d="M36 60 16 46v28z" fill="#ffa24d"/><path d="M84 60 104 46v28z" fill="#ffa24d"/><path d="M50 52c6 5 14 5 20 0M50 68c6-5 14-5 20 0" stroke="#1a0f06" stroke-width="2" opacity=".55"/></svg>',
+ costumes:'<svg viewBox="0 0 120 120" fill="none"><path d="M30 48c0-8 12-12 30-12s30 4 30 12c0 18-10 30-30 30S30 66 30 48z" fill="#5A2D82"/><circle cx="46" cy="54" r="6" fill="#1A1A1C"/><circle cx="74" cy="54" r="6" fill="#1A1A1C"/><path d="M30 48c-6-2-10 2-10 2M90 48c6-2 10 2 10 2" stroke="#D7C6F7" stroke-width="3" stroke-linecap="round"/></svg>',
+ monsters:'<svg viewBox="0 0 120 120" fill="none"><path d="M60 26c-18 0-30 13-30 30 0 10 5 16 10 20v10a6 6 0 0 0 6 6h28a6 6 0 0 0 6-6V76c5-4 10-10 10-20 0-17-12-30-30-30z" fill="#FFFBF4"/><circle cx="48" cy="56" r="7" fill="#1A1A1C"/><circle cx="72" cy="56" r="7" fill="#1A1A1C"/><path d="M60 66l-5 10h10z" fill="#333436"/><path d="M52 92v-6M60 92v-8M68 92v-6" stroke="#333436" stroke-width="3"/></svg>',
+ lore:'<svg viewBox="0 0 120 120" fill="none"><path d="M58 30v-7c0-3 6-3 6 0" stroke="#7A9B7E" stroke-width="4" fill="none" stroke-linecap="round"/><ellipse cx="60" cy="68" rx="36" ry="30" fill="#E8701A"/><path d="M40 60l11 8-11 4zM80 60l-11 8 11 4zM46 84c8-6 20-6 28 0-4 4-24 4-28 0z" fill="#1A1A1C"/><path d="M54 52l6 7 6-7z" fill="#1A1A1C"/></svg>'
 };
 const QUESTIONS=[
  {cat:'Horror Movies',art:'horror',prompt:'In <em>Hocus Pocus</em>, the Sanderson sisters stay young by stealing what from children?',options:['Their life force','Their shadows','Their voices','Their memories'],correct:0},
  {cat:'Horror Movies',art:'horror',prompt:'What 1978 John Carpenter film introduced masked killer Michael Myers?',options:['Scream','Halloween','Friday the 13th','A Nightmare on Elm Street'],correct:1},
  {cat:'Horror Movies',art:'horror',prompt:'In <em>The Nightmare Before Christmas</em>, what is the Pumpkin King’s full name?',options:['Oogie Boogie','Victor Van Dort','Jack Skellington','Edward Scissorhands'],correct:2},
  {cat:'Horror Movies',art:'horror',prompt:'This 2017 Stephen King adaptation is the highest-grossing horror film of all time.',options:['The Exorcist','Get Out','A Quiet Place','It'],correct:3},
- {cat:'Spooky Tunes',art:'music',prompt:'“’Cause this is thriller, thriller night…” — who recorded this 1983 smash?',options:['Michael Jackson','Prince','Lionel Richie','Rick James'],correct:0},
- {cat:'Spooky Tunes',art:'music',prompt:'What 1962 novelty song by Bobby “Boris” Pickett is the ultimate Halloween-party staple?',options:['The Time Warp','Monster Mash','Werewolves of London','Spooky Scary Skeletons'],correct:1},
- {cat:'Spooky Tunes',art:'music',prompt:'Ray Parker Jr. asked “Who ya gonna call?” in the theme to which 1984 film?',options:['Beetlejuice','Gremlins','Ghostbusters','The Lost Boys'],correct:2},
- {cat:'Spooky Tunes',art:'music',prompt:'“I always feel like somebody’s watching me” — name this 1984 Rockwell hit.',options:['Thriller','Private Eyes','Every Breath You Take','Somebody’s Watching Me'],correct:3},
- {cat:'Candy Corner',prompt:'Name the three colors of a classic piece of candy corn, bottom to top.',options:['Yellow, orange, white','Red, orange, yellow','Orange, white, brown','Yellow, white, green'],correct:0},
- {cat:'Candy Corner',prompt:'For most years running, this is the best-selling Halloween candy in the U.S.',options:['Snickers','Reese’s Peanut Butter Cups','M&M’s','Candy corn'],correct:1},
- {cat:'Candy Corner',prompt:'This bar was named after a favorite horse owned by the Mars family.',options:['Milky Way','Twix','Snickers','3 Musketeers'],correct:2},
- {cat:'Candy Corner',prompt:'When invented in the 1880s, candy corn was originally sold under what farm-themed name?',options:['Butter Cream','Harvest Kernels','Candy Maize','Chicken Feed'],correct:3},
- {cat:'Famous Costumes',prompt:'A white bedsheet with two eye-holes is the no-effort costume for what?',options:['A ghost','A mummy','A zombie','A skeleton'],correct:0},
- {cat:'Famous Costumes',prompt:'Striped shirt, bobble hat, round glasses — which “find me in the crowd” character?',options:['Carmen Sandiego','Waldo (Wally)','The Hamburglar','Mario'],correct:1},
- {cat:'Famous Costumes',prompt:'Black cape, slicked widow’s peak, and fangs make you which Transylvanian count?',options:['The Grim Reaper','A witch','Dracula','Frankenstein’s monster'],correct:2},
- {cat:'Famous Costumes',prompt:'In 2023, a wave of all-pink costumes swept Halloween thanks to which blockbuster movie?',options:['Oppenheimer','Mean Girls','Legally Blonde','Barbie'],correct:3},
- {cat:'Monsters & Myths',prompt:'Under a full moon, a human transforms into this howling monster.',options:['A werewolf','A vampire','A banshee','A goblin'],correct:0},
- {cat:'Monsters & Myths',prompt:'Mary Shelley’s 1818 novel introduced which reanimated creature stitched from parts?',options:['Dracula','Frankenstein’s monster','The Invisible Man','The Mummy'],correct:1},
- {cat:'Monsters & Myths',prompt:'In folklore, what pungent kitchen staple is said to ward off vampires?',options:['Onions','Rosemary','Garlic','Chili peppers'],correct:2},
- {cat:'Monsters & Myths',prompt:'A reanimated ancient Egyptian corpse wrapped in linen bandages is known as what?',options:['A ghoul','A lich','A wraith','A mummy'],correct:3},
- {cat:'Halloween Lore',prompt:'Before pumpkins, the Irish carved lanterns out of what humbler vegetable?',options:['Turnips','Potatoes','Gourds','Beets'],correct:0},
- {cat:'Halloween Lore',prompt:'Halloween traces back to which ancient Celtic festival marking the end of harvest?',options:['Beltane','Samhain','Yule','Walpurgis Night'],correct:1,dbl:true},
- {cat:'Halloween Lore',prompt:'The fear of Halloween itself has a name — what is this phobia called?',options:['Nyctophobia','Phasmophobia','Samhainophobia','Wiccaphobia'],correct:2,dbl:true}
+ {cat:'Spooky Tunes',art:'music',link:'https://www.youtube.com/results?search_query=Michael+Jackson+Thriller+official+video',linkLabel:'▶ Play the song (YouTube)',prompt:'“’Cause this is thriller, thriller night…” — who recorded this 1983 smash?',options:['Michael Jackson','Prince','Lionel Richie','Rick James'],correct:0},
+ {cat:'Spooky Tunes',art:'music',link:'https://www.youtube.com/results?search_query=Bobby+Boris+Pickett+Monster+Mash',linkLabel:'▶ Play the song (YouTube)',prompt:'What 1962 novelty song by Bobby “Boris” Pickett is the ultimate Halloween-party staple?',options:['The Time Warp','Monster Mash','Werewolves of London','Spooky Scary Skeletons'],correct:1},
+ {cat:'Spooky Tunes',art:'music',link:'https://www.youtube.com/results?search_query=Ray+Parker+Jr+Ghostbusters+theme',linkLabel:'▶ Play the song (YouTube)',prompt:'Ray Parker Jr. asked “Who ya gonna call?” in the theme to which 1984 film?',options:['Beetlejuice','Gremlins','Ghostbusters','The Lost Boys'],correct:2},
+ {cat:'Spooky Tunes',art:'music',link:'https://www.youtube.com/results?search_query=Rockwell+Somebody%27s+Watching+Me',linkLabel:'▶ Play the song (YouTube)',prompt:'“I always feel like somebody’s watching me” — name this 1984 Rockwell hit.',options:['Thriller','Private Eyes','Every Breath You Take','Somebody’s Watching Me'],correct:3},
+ {cat:'Candy Corner',art:'candy',prompt:'Name the three colors of a classic piece of candy corn, bottom to top.',options:['Yellow, orange, white','Red, orange, yellow','Orange, white, brown','Yellow, white, green'],correct:0},
+ {cat:'Candy Corner',art:'candy',prompt:'For most years running, this is the best-selling Halloween candy in the U.S.',options:['Snickers','Reese’s Peanut Butter Cups','M&M’s','Candy corn'],correct:1},
+ {cat:'Candy Corner',art:'candy',prompt:'This bar was named after a favorite horse owned by the Mars family.',options:['Milky Way','Twix','Snickers','3 Musketeers'],correct:2},
+ {cat:'Candy Corner',art:'candy',prompt:'When invented in the 1880s, candy corn was originally sold under what farm-themed name?',options:['Butter Cream','Harvest Kernels','Candy Maize','Chicken Feed'],correct:3},
+ {cat:'Famous Costumes',art:'costumes',prompt:'A white bedsheet with two eye-holes is the no-effort costume for what?',options:['A ghost','A mummy','A zombie','A skeleton'],correct:0},
+ {cat:'Famous Costumes',art:'costumes',prompt:'Striped shirt, bobble hat, round glasses — which “find me in the crowd” character?',options:['Carmen Sandiego','Waldo (Wally)','The Hamburglar','Mario'],correct:1},
+ {cat:'Famous Costumes',art:'costumes',prompt:'Black cape, slicked widow’s peak, and fangs make you which Transylvanian count?',options:['The Grim Reaper','A witch','Dracula','Frankenstein’s monster'],correct:2},
+ {cat:'Famous Costumes',art:'costumes',prompt:'In 2023, a wave of all-pink costumes swept Halloween thanks to which blockbuster movie?',options:['Oppenheimer','Mean Girls','Legally Blonde','Barbie'],correct:3},
+ {cat:'Monsters & Myths',art:'monsters',prompt:'Under a full moon, a human transforms into this howling monster.',options:['A werewolf','A vampire','A banshee','A goblin'],correct:0},
+ {cat:'Monsters & Myths',art:'monsters',prompt:'Mary Shelley’s 1818 novel introduced which reanimated creature stitched from parts?',options:['Dracula','Frankenstein’s monster','The Invisible Man','The Mummy'],correct:1},
+ {cat:'Monsters & Myths',art:'monsters',prompt:'In folklore, what pungent kitchen staple is said to ward off vampires?',options:['Onions','Rosemary','Garlic','Chili peppers'],correct:2},
+ {cat:'Monsters & Myths',art:'monsters',prompt:'A reanimated ancient Egyptian corpse wrapped in linen bandages is known as what?',options:['A ghoul','A lich','A wraith','A mummy'],correct:3},
+ {cat:'Halloween Lore',art:'lore',prompt:'Before pumpkins, the Irish carved lanterns out of what humbler vegetable?',options:['Turnips','Potatoes','Gourds','Beets'],correct:0},
+ {cat:'Halloween Lore',art:'lore',prompt:'Halloween traces back to which ancient Celtic festival marking the end of harvest?',options:['Beltane','Samhain','Yule','Walpurgis Night'],correct:1,dbl:true},
+ {cat:'Halloween Lore',art:'lore',prompt:'The fear of Halloween itself has a name — what is this phobia called?',options:['Nyctophobia','Phasmophobia','Samhainophobia','Wiccaphobia'],correct:2,dbl:true}
 ];
 const BASE=1000, L=['A','B','C','D'];
 
@@ -214,6 +221,7 @@ function initFirebase(){
 /* ===================== BOOT ===================== */
 window.addEventListener('DOMContentLoaded',()=>{
   bats();
+  const mt=document.getElementById('musicToggle'); if(mt) mt.addEventListener('click',toggleMusic);
   if(!configured){ renderSetup(); return; }
   if(!initFirebase()){ app.innerHTML=msg('Setup needed','Firebase didn’t initialize — double-check the config block at the top of index.html.'); return; }
   // resume?
@@ -321,6 +329,7 @@ function playerLeave(){ localStorage.removeItem('mm_player'); location.reload();
 let liveTimer=setInterval(()=>{ if(data&&data.phase==='question') render(); },400);
 
 function render(){
+  updateMusicBtn();
   if(role==='host')return renderHost();
   if(role==='player')return renderPlayer();
   renderLanding();
@@ -391,7 +400,7 @@ function renderHost(){
         '<div class="tag">'+esc(c.cat)+'</div><div class="prompt">'+c.prompt+'</div>'+
         (c.link?'<div style="margin:6px 0 10px"><a class="btn violet" href="'+esc(c.link)+'" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">'+esc(c.linkLabel||'▶ Play clip')+'</a></div>':'')+
         '<div class="timerbar"><i style="width:'+(frac*100)+'%"></i></div>'+
-        '<div style="display:flex;justify-content:space-between;margin-top:6px"><span class="pill">⏱ <span class="n">'+rem+'s</span></span><span class="pill">✍️ <span class="n">'+ans+'</span> / '+players.length+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="pill">⏱ <span class="n">'+rem+'s</span></span><span class="pill">⭐ up to <span class="n">'+(c.dbl?2000:1000)+'</span></span><span class="pill">✍️ <span class="n">'+ans+'</span> / '+players.length+'</span></div>'+
         '<div class="opts">'+c.options.map((o,i)=>'<div class="opt host '+'abcd'[i]+'"><span class="lk">'+L[i]+'</span>'+esc(o)+'</div>').join('')+'</div>'+
         '<div class="row" style="margin-top:16px">'+
           (pz?'<button class="btn primary" id="resumeBtn">▶ Resume</button><button class="btn" id="revealBtn">Reveal →</button>'
@@ -451,17 +460,18 @@ function renderPlayer(){
         '<div class="tag">'+esc(c.cat)+'</div><div class="prompt" style="font-size:1.1rem">'+c.prompt+'</div>'+
         '<div class="timerbar"><i style="width:'+(frac*100)+'%"></i></div>'+
         '<div class="opts">'+c.options.map((o,i)=>{const pk=done&&mine===i,dm=done&&!pk;return '<button class="opt '+'abcd'[i]+(pk?' pick':'')+(dm?' dim':'')+'" data-ans="'+i+'"'+((done||pz)?' disabled':'')+'><span class="lk">'+L[i]+'</span>'+esc(o)+'</button>';}).join('')+'</div>'+
-        (pz?'<p class="sub center" style="margin-top:12px">Paused — hang tight ⏸</p>':(done?'<p class="sub center" style="margin-top:12px">Locked in — hang tight! ✅</p>':'<p class="hint center" style="margin-top:12px">Tap your answer. Faster correct = more points.</p>'))+
+        (pz?'<p class="sub center" style="margin-top:12px">Paused — hang tight ⏸</p>':(done?'<p class="sub center" style="margin-top:12px">Locked in — hang tight! ✅</p>':'<p class="hint center" style="margin-top:12px">Worth up to '+(c.dbl?2000:1000)+' — faster correct = more.</p>'))+
       '</div>';
     wirePlayer();return;
   }
   if(data.phase==='reveal'){
     const c=data.current, qi=data.qIndex, mine=myAnswer(qi), good=mine!=null&&mine===c.correct, myScore=(data.players&&data.players[me.pid]&&data.players[me.pid].score)||0;
+    let myPts=0; if(good){ const aa=(data.answers&&data.answers[qi]&&data.answers[qi][me.pid])||{}; const at=(typeof aa.at==='number')?aa.at:c.deadline; const frac=clamp((c.deadline-at)/((data.qSeconds||20)*1000),0,1); myPts=Math.round(BASE*(0.5+0.5*frac))*(c.dbl?2:1); }
     if(P_lastReveal!==qi){ P_lastReveal=qi; if(mine!=null){ good?sfxCorrect():sfxWrong(); } }
     app.innerHTML=
       '<div class="card center">'+
         (mine!=null?'<div class="verdict '+(good?'good':'bad')+'" style="font-size:clamp(2.2rem,8vw,3rem)">'+(good?'Correct!':'Nope')+'</div>'+
-          (good?'':'<p class="sub">It was <b>'+esc(c.options[c.correct])+'</b></p>')
+          (good?'<div style="font-family:var(--voice);color:var(--gold);font-weight:700;font-size:1.25rem;margin-top:4px">+'+myPts+' points</div>':'<p class="sub">It was <b>'+esc(c.options[c.correct])+'</b></p>')
           :'<div class="verdict bad" style="font-size:2rem">Missed it</div><p class="sub">The answer was <b>'+esc(c.options[c.correct])+'</b></p>')+
         '<div style="margin-top:12px"><span class="pill">Your score: <span class="n">'+myScore+'</span></span></div></div>'+
       '<div class="card"><div class="tag">Leaderboard</div>'+listHtml(board(10),me.name)+'</div>';
@@ -504,6 +514,32 @@ function sfxCorrect(){tones([{f:523,d:.12,gap:.1,type:'triangle'},{f:659,d:.12,g
 function sfxWrong(){tones([{f:196,d:.2,gap:.17,type:'sawtooth',v:.08},{f:146,f2:110,d:.34,type:'sawtooth',v:.08}]);}
 function sfxOrgan(){chord([146.83,174.61,220],.9,.045);}
 function sfxGong(){tones([{f:110,f2:70,d:.8,type:'sine',v:.12}]);}
+
+/* procedural spooky ambience — original, synthesized, loops forever */
+let ambient=null, musicOn=false;
+function startAmbient(){
+  const a=ac(); if(!a||ambient)return;
+  const master=a.createGain(); master.gain.value=0.05; master.connect(a.destination);
+  const filt=a.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=360; filt.Q.value=5; filt.connect(master);
+  const o1=a.createOscillator(); o1.type='sawtooth'; o1.frequency.value=55;      // low drone
+  const o2=a.createOscillator(); o2.type='sawtooth'; o2.frequency.value=58.27;    // detuned, unsettled
+  const dg=a.createGain(); dg.gain.value=0.5; o1.connect(dg); o2.connect(dg); dg.connect(filt);
+  const lfo=a.createOscillator(); lfo.type='sine'; lfo.frequency.value=0.07;      // slow filter sweep
+  const lfog=a.createGain(); lfog.gain.value=170; lfo.connect(lfog); lfog.connect(filt.frequency);
+  o1.start(); o2.start(); lfo.start();
+  const notes=[523.25,587.33,392,466.16];
+  const amb={master,o1,o2,lfo,timer:null};
+  const chime=()=>{ if(ambient!==amb)return;
+    if(Math.random()<0.6){ const o=a.createOscillator(),g=a.createGain(); o.type='sine';
+      o.frequency.value=notes[Math.floor(Math.random()*notes.length)]*(Math.random()<.5?1:2);
+      g.gain.setValueAtTime(0.0001,a.currentTime); g.gain.exponentialRampToValueAtTime(0.025,a.currentTime+0.4);
+      g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+2.4); o.connect(g); g.connect(master); o.start(); o.stop(a.currentTime+2.5); }
+    amb.timer=setTimeout(chime, 3000+Math.random()*4500); };
+  ambient=amb; chime();
+}
+function stopAmbient(){ if(!ambient)return; const a=ambient; ambient=null; try{ a.o1.stop(); a.o2.stop(); a.lfo.stop(); clearTimeout(a.timer); a.master.disconnect(); }catch(e){} }
+function toggleMusic(){ musicOn=!musicOn; if(musicOn)startAmbient(); else stopAmbient(); updateMusicBtn(); }
+function updateMusicBtn(){ const b=document.getElementById('musicToggle'); if(!b)return; b.textContent=musicOn?'🔊':'🔇'; b.title=musicOn?'Background music on':'Background music off'; b.style.display=(role==='host')?'flex':'none'; }
 
 /* ===================== DECOR ===================== */
 function bats(){ if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
