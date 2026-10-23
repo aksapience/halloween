@@ -384,7 +384,7 @@ function renderHost(){
         '<div class="timerbar"><i style="width:'+(frac*100)+'%"></i></div>'+
         '<div style="display:flex;justify-content:space-between;margin-top:6px"><span class="pill">⏱ <span class="n">'+rem+'s</span></span><span class="pill">✍️ <span class="n">'+ans+'</span> / '+players.length+'</span></div>'+
         '<div class="opts">'+c.options.map((o,i)=>'<div class="opt host '+'abcd'[i]+'"><span class="lk">'+L[i]+'</span>'+esc(o)+'</div>').join('')+'</div>'+
-        '<div class="row" style="margin-top:16px"><button class="btn primary" id="revealBtn">Reveal →</button></div>'+
+        '<div class="row" style="margin-top:16px"><button class="btn primary" id="revealBtn">Reveal →</button><button class="btn" id="endBtn" style="font-size:.78rem">End room</button></div>'+
       '</div>';
     wireHost();return;
   }
@@ -397,7 +397,7 @@ function renderHost(){
         '<div class="opts">'+c.options.map((o,i)=>'<div class="opt '+'abcd'[i]+(i===c.correct?' right':' dim')+'"><span class="lk">'+L[i]+'</span>'+esc(o)+'</div>').join('')+'</div>'+
         '<p class="sub" style="margin-top:12px">'+(st.correct||0)+' of '+(st.answered||0)+' correct.</p></div>'+
       '<div class="card"><div class="tag">'+(data.qIndex>=QUESTIONS.length-1?'Final standings':'Leaderboard')+'</div>'+listHtml(lb,null)+'</div>'+
-      '<div class="row" style="margin-top:4px"><button class="btn primary big" id="nextBtn">'+(data.qIndex>=QUESTIONS.length-1?'Final Results →':'Next Question →')+'</button></div>';
+      '<div class="row" style="margin-top:4px"><button class="btn primary big" id="nextBtn">'+(data.qIndex>=QUESTIONS.length-1?'Final Results →':'Next Question →')+'</button><button class="btn" id="endBtn" style="font-size:.78rem">End room</button></div>';
     wireHost();return;
   }
   if(data.phase==='final'){
