@@ -140,6 +140,13 @@ window.FIREBASE_CONFIG = {
   .brand .mark{font-weight:700;letter-spacing:.02em;color:#fff;text-transform:lowercase}
   .musicbtn{position:fixed;top:calc(12px + env(safe-area-inset-top,0));right:calc(12px + env(safe-area-inset-right,0));z-index:50;width:42px;height:42px;border-radius:50%;background:var(--panel-2);border:1px solid var(--line);font-size:1.05rem;display:none;align-items:center;justify-content:center;padding:0}
   .musicbtn:hover{background:#3a3447;box-shadow:0 0 12px rgba(90,45,130,.4)}
+  #clipOverlay:empty{display:none}
+  .clipmodal{position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(8,5,14,.92);padding:24px}
+  .clipclose{position:absolute;top:calc(14px + env(safe-area-inset-top,0));right:16px;width:40px;height:40px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line);color:var(--sand);font-size:1.2rem}
+  .ytwrap{position:relative;width:min(760px,92vw);aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#000}
+  .ytwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .cliplink a{color:var(--wisteria);font-size:.85rem;text-decoration:none}
+  .cliplink a:hover{text-decoration:underline}
   .conn{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:40;background:#2a1620;border:1px solid var(--blood);
     color:#ffd4da;border-radius:999px;padding:7px 15px;font-size:.78rem;display:none}
   .confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
@@ -157,6 +164,7 @@ window.FIREBASE_CONFIG = {
   <div class="brand"><span>Hosted by</span><span class="mark">sapience ai</span></div>
 </div>
 <button class="musicbtn" id="musicToggle" aria-label="Toggle background music" title="Music off">🔇</button>
+<div id="clipOverlay"></div>
 <div class="conn" id="conn">Reconnecting…</div>
 <div id="confettiHost"></div>
 
@@ -177,7 +185,7 @@ const QUESTIONS=[
  {cat:'Horror Movies',art:'horror',prompt:'What 1978 John Carpenter film introduced masked killer Michael Myers?',options:['Scream','Halloween','Friday the 13th','A Nightmare on Elm Street'],correct:1},
  {cat:'Horror Movies',art:'horror',prompt:'In <em>The Nightmare Before Christmas</em>, what is the Pumpkin King’s full name?',options:['Oogie Boogie','Victor Van Dort','Jack Skellington','Edward Scissorhands'],correct:2},
  {cat:'Horror Movies',art:'horror',prompt:'This 2017 Stephen King adaptation is the highest-grossing horror film of all time.',options:['The Exorcist','Get Out','A Quiet Place','It'],correct:3},
- {cat:'Spooky Tunes',art:'music',link:'https://www.youtube.com/results?search_query=Michael+Jackson+Thriller+official+video',linkLabel:'▶ Play the song (YouTube)',prompt:'“’Cause this is thriller, thriller night…” — who recorded this 1983 smash?',options:['Michael Jackson','Prince','Lionel Richie','Rick James'],correct:0},
+ {cat:'Spooky Tunes',art:'music',yt:'sOnqjkJTMaA',start:296,end:326,link:'https://www.youtube.com/watch?v=sOnqjkJTMaA',linkLabel:'▶ Play the song (YouTube)',prompt:'“’Cause this is thriller, thriller night…” — who recorded this 1983 smash?',options:['Michael Jackson','Prince','Lionel Richie','Rick James'],correct:0},
  {cat:'Spooky Tunes',art:'music',link:'https://www.youtube.com/results?search_query=Bobby+Boris+Pickett+Monster+Mash',linkLabel:'▶ Play the song (YouTube)',prompt:'What 1962 novelty song by Bobby “Boris” Pickett is the ultimate Halloween-party staple?',options:['The Time Warp','Monster Mash','Werewolves of London','Spooky Scary Skeletons'],correct:1},
  {cat:'Spooky Tunes',art:'music',link:'https://www.youtube.com/results?search_query=Ray+Parker+Jr+Ghostbusters+theme',linkLabel:'▶ Play the song (YouTube)',prompt:'Ray Parker Jr. asked “Who ya gonna call?” in the theme to which 1984 film?',options:['Beetlejuice','Gremlins','Ghostbusters','The Lost Boys'],correct:2},
  {cat:'Spooky Tunes',art:'music',link:'https://www.youtube.com/results?search_query=Rockwell+Somebody%27s+Watching+Me',linkLabel:'▶ Play the song (YouTube)',prompt:'“I always feel like somebody’s watching me” — name this 1984 Rockwell hit.',options:['Thriller','Private Eyes','Every Breath You Take','Somebody’s Watching Me'],correct:3},
@@ -267,7 +275,7 @@ function hostNext(force){
   const qSeconds=(data&&data.qSeconds)||20;
   db.ref('rooms/'+roomCode).update({
     phase:'question', qIndex:qi,
-    current:{cat:q.cat,art:q.art||null,prompt:q.prompt,options,dbl:!!q.dbl,link:q.link||null,linkLabel:q.linkLabel||null,deadline:Date.now()+qSeconds*1000,correct:null,stats:null}
+    current:{cat:q.cat,art:q.art||null,prompt:q.prompt,options,dbl:!!q.dbl,link:q.link||null,linkLabel:q.linkLabel||null,yt:q.yt||null,start:q.start||null,end:q.end||null,deadline:Date.now()+qSeconds*1000,correct:null,stats:null}
   });
   sfxOrgan();
   hostTO=setTimeout(hostReveal,qSeconds*1000+300);
@@ -398,7 +406,7 @@ function renderHost(){
         (pz?'<div class="dblflag" style="color:var(--wisteria)">⏸ Paused</div>':'')+
         (c.art&&ART[c.art]?'<div class="art">'+ART[c.art]+'</div>':'')+
         '<div class="tag">'+esc(c.cat)+'</div><div class="prompt">'+c.prompt+'</div>'+
-        (c.link?'<div style="margin:6px 0 10px"><a class="btn violet" href="'+esc(c.link)+'" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">'+esc(c.linkLabel||'▶ Play clip')+'</a></div>':'')+
+        (c.yt?'<div style="margin:6px 0 10px"><button class="btn violet" id="clipBtn" style="display:inline-block">▶ Play clip</button></div>':(c.link?'<div style="margin:6px 0 10px"><a class="btn violet" href="'+esc(c.link)+'" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">'+esc(c.linkLabel||'▶ Play clip')+'</a></div>':''))+
         '<div class="timerbar"><i style="width:'+(frac*100)+'%"></i></div>'+
         '<div style="display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-top:6px"><span class="pill">⏱ <span class="n">'+rem+'s</span></span><span class="pill">⭐ up to <span class="n">'+(c.dbl?2000:1000)+'</span></span><span class="pill">✍️ <span class="n">'+ans+'</span> / '+players.length+'</span></div>'+
         '<div class="opts">'+c.options.map((o,i)=>'<div class="opt host '+'abcd'[i]+'"><span class="lk">'+L[i]+'</span>'+esc(o)+'</div>').join('')+'</div>'+
@@ -417,7 +425,7 @@ function renderHost(){
       hdr(data.qIndex)+
       '<div class="card"><div class="tag">'+esc(c.cat)+(c.dbl?' · ★ Double':'')+'</div>'+
         '<div class="prompt" style="font-size:1.2rem">'+c.prompt+'</div>'+
-        (c.link?'<div style="margin:2px 0 8px"><a class="btn violet" href="'+esc(c.link)+'" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;font-size:.82rem">'+esc(c.linkLabel||'▶ Replay clip')+'</a></div>':'')+
+        (c.yt?'<div style="margin:2px 0 8px"><button class="btn violet" id="clipBtn" style="display:inline-block;font-size:.82rem">▶ Replay clip</button></div>':(c.link?'<div style="margin:2px 0 8px"><a class="btn violet" href="'+esc(c.link)+'" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;font-size:.82rem">'+esc(c.linkLabel||'▶ Replay clip')+'</a></div>':''))+
         '<div class="opts">'+c.options.map((o,i)=>'<div class="opt '+'abcd'[i]+(i===c.correct?' right':' dim')+'"><span class="lk">'+L[i]+'</span>'+esc(o)+'</div>').join('')+'</div>'+
         '<p class="sub" style="margin-top:12px">'+(st.correct||0)+' of '+(st.answered||0)+' correct.</p></div>'+
       '<div class="card"><div class="tag">'+(data.qIndex>=QUESTIONS.length-1?'Final standings':'Leaderboard')+'</div>'+listHtml(lb,null)+'</div>'+
@@ -500,9 +508,17 @@ function winBanner(w){ if(!w.length)return '<div class="winner" style="font-size
 function wireHost(){
   byId('startBtn',hostStart); byId('revealBtn',hostReveal); byId('nextBtn',()=>hostNext()); byId('endBtn',hostEnd);
   byId('pauseBtn',hostPause); byId('resumeBtn',hostResume); byId('endGameBtn',hostEndGame); byId('clearBtn',hostClear);
+  byId('clipBtn',()=>openClip(data.current));
   document.querySelectorAll('[data-sec]').forEach(b=>b.addEventListener('click',e=>hostSetTime(+e.currentTarget.dataset.sec)));
 }
 function wirePlayer(){ document.querySelectorAll('[data-ans]').forEach(b=>b.addEventListener('click',e=>playerAnswer(+e.currentTarget.dataset.ans))); }
+function ytEmbed(c){ const s=c.start?('&start='+c.start):''; const e=c.end?('&end='+c.end):''; return 'https://www.youtube-nocookie.com/embed/'+encodeURIComponent(c.yt)+'?autoplay=1&rel=0&playsinline=1'+s+e; }
+function openClip(c){ if(!c||!c.yt)return; const o=document.getElementById('clipOverlay'); if(!o)return;
+  o.innerHTML='<div class="clipmodal"><button class="clipclose" id="clipClose" aria-label="Close">✕</button>'+
+    '<div class="ytwrap"><iframe src="'+ytEmbed(c)+'" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe></div>'+
+    '<div class="cliplink"><a href="'+esc(c.link||('https://www.youtube.com/watch?v='+c.yt))+'" target="_blank" rel="noopener">Not playing? Open on YouTube ↗</a></div></div>';
+  const cc=document.getElementById('clipClose'); if(cc)cc.addEventListener('click',closeClip); }
+function closeClip(){ const o=document.getElementById('clipOverlay'); if(o)o.innerHTML=''; }
 function byId(i,fn){const e=document.getElementById(i);if(e)e.addEventListener('click',fn);}
 function val(i){const e=document.getElementById(i);return e?e.value:'';}
 
