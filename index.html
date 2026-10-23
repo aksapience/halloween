@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Monster Mash Trivia</title>
+
+<!-- ============================================================= -->
+<!--  ⬇⬇⬇  PASTE YOUR FIREBASE CONFIG HERE (see README, Step 2)  ⬇⬇⬇ -->
+<!-- ============================================================= -->
+<script>
+window.FIREBASE_CONFIG = {
+  apiKey: "PASTE_YOUR_API_KEY",
+  authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://PASTE_YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId: "PASTE_YOUR_PROJECT",
+  appId: "PASTE_YOUR_APP_ID"
+};
+</script>
+<!-- ============================================================= -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  /* Sapience AI brand applied to a Halloween game:
+     charcoal/plum ground, pumpkin + violet accents, Libre Baskerville voice, Inter UI. */
+  :root{
+    --ink:#1A1A1C; --ink-2:#222024; --charcoal:#333436;
+    --plum:#674C67; --violet:#5A2D82; --wisteria:#D7C6F7; --bloom:#F7F1FF;
+    --sand:#FFFBF4; --gray:#8E9094; --sage:#7A9B7E;
+    --pumpkin:#E8701A; --pumpkin-2:#ffa24d; --poison:#8FC98A; --blood:#d6455a; --gold:#f0c35a;
+    --line:#3a3340; --panel:#262230; --panel-2:#2f2a3b;
+    --voice:'Libre Baskerville', Georgia, serif;
+    --ui:'Inter', system-ui, sans-serif;
+    --opt-a:#E8701A; --opt-b:#5A2D82; --opt-c:#7A9B7E; --opt-d:#b2466e;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    font-family:var(--ui); color:var(--sand); background:
+      radial-gradient(1000px 560px at 50% -10%, #3a2550 0%, rgba(58,37,80,0) 60%),
+      radial-gradient(800px 480px at 90% 110%, #2a2033 0%, rgba(42,32,51,0) 55%),
+      var(--ink);
+    min-height:100%; -webkit-font-smoothing:antialiased;
+    padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0);
+  }
+  .fog{position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(60% 40% at 50% 120%, rgba(143,201,138,.06), transparent 70%)}
+  .wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;min-height:100vh;
+    padding:26px max(18px,env(safe-area-inset-left,0)) 48px max(18px,env(safe-area-inset-right,0));
+    display:flex;flex-direction:column}
+  .main{flex:1;display:flex;flex-direction:column;justify-content:center;gap:18px}
+
+  h1{font-family:var(--voice);font-weight:700;margin:0;line-height:1.05;
+    font-size:clamp(2rem,6vw,3.1rem);letter-spacing:-.01em;text-wrap:balance}
+  h1 .m{color:var(--pumpkin)} h1 .t{color:var(--wisteria)}
+  .kicker{font-family:var(--ui);text-transform:uppercase;letter-spacing:.26em;font-size:.68rem;
+    color:var(--pumpkin-2);font-weight:600}
+  .sub{color:var(--gray);font-size:.96rem;line-height:1.5;margin:0}
+  .center{text-align:center}
+
+  .card{background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--line);border-radius:18px;padding:clamp(20px,4vw,30px);
+    box-shadow:0 16px 44px rgba(0,0,0,.4)}
+
+  button{font-family:var(--ui);cursor:pointer;border:none;color:var(--sand);border-radius:12px;font-weight:600;
+    transition:transform .07s ease,background .15s ease,box-shadow .15s ease}
+  button:focus-visible{outline:2px solid var(--pumpkin-2);outline-offset:2px}
+  button:active{transform:translateY(1px)}
+  button:disabled{opacity:.45;cursor:default}
+  .btn{background:var(--panel-2);border:1px solid var(--line);padding:12px 20px;font-size:.92rem}
+  .btn:hover{background:#3a3447}
+  .btn.primary{background:linear-gradient(180deg,var(--pumpkin),#cf5e10);color:#1a0f06;border:1px solid var(--pumpkin-2)}
+  .btn.primary:hover{box-shadow:0 0 20px rgba(232,112,26,.45)}
+  .btn.violet{background:linear-gradient(180deg,var(--violet),#46206a);border:1px solid #7a4aa8}
+  .btn.big{padding:15px 30px;font-size:1.05rem}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+  input.txt{font-family:var(--ui);font-size:1.1rem;color:var(--sand);text-align:center;
+    background:#1b1822;border:1px solid var(--line);border-radius:12px;padding:13px 16px;width:100%}
+  input.txt:focus{outline:none;border-color:var(--pumpkin);box-shadow:0 0 14px rgba(232,112,26,.22)}
+  input.code{letter-spacing:.4em;text-transform:uppercase;font-weight:700;font-size:1.5rem}
+
+  .tag{font-family:var(--ui);text-transform:uppercase;letter-spacing:.16em;font-size:.72rem;color:var(--pumpkin-2);font-weight:600}
+  .prompt{font-family:var(--voice);font-weight:400;font-size:clamp(1.25rem,3.4vw,1.8rem);line-height:1.3;margin:12px 0;text-wrap:balance}
+
+  .roomcode{font-family:var(--voice);font-weight:700;font-size:clamp(2.4rem,9vw,3.6rem);
+    letter-spacing:.14em;color:var(--pumpkin);text-shadow:0 0 22px rgba(232,112,26,.35)}
+  .codebox{display:inline-flex;flex-direction:column;align-items:center;gap:2px;
+    background:#1b1822;border:1px dashed var(--line);border-radius:14px;padding:12px 26px}
+
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+  @media (max-width:460px){.opts{grid-template-columns:1fr}}
+  .opt{display:flex;align-items:center;gap:12px;text-align:left;padding:16px;border-radius:14px;
+    border:1px solid rgba(255,255,255,.08);font-weight:600;font-size:1.02rem;color:#fff;min-height:62px;line-height:1.2}
+  .opt .lk{flex:none;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:rgba(0,0,0,.26);font-size:.95rem}
+  .opt.a{background:var(--opt-a);color:#1a0f06} .opt.b{background:var(--opt-b)}
+  .opt.c{background:var(--opt-c);color:#13210f} .opt.d{background:var(--opt-d)}
+  .opt.pick{box-shadow:0 0 0 3px #fff,0 0 20px rgba(255,255,255,.35)}
+  .opt.dim{opacity:.34}
+  .opt.right{box-shadow:0 0 0 3px var(--poison),0 0 22px rgba(143,201,138,.45)}
+  .opt.host{cursor:default;font-size:.98rem;min-height:54px}
+
+  .timerbar{height:9px;border-radius:999px;background:var(--panel-2);overflow:hidden;margin:14px 0 4px;border:1px solid var(--line)}
+  .timerbar>i{display:block;height:100%;background:linear-gradient(90deg,var(--sage),var(--pumpkin));transition:width .3s linear}
+  .pill{display:inline-flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:999px;padding:7px 15px;font-size:.84rem;font-weight:600}
+  .pill .n{color:var(--gold)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+  .chip{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:.84rem;font-weight:600}
+  .chip.me{border-color:var(--pumpkin);color:var(--pumpkin-2)}
+
+  .lead{display:flex;flex-direction:column;gap:8px;margin-top:8px;text-align:left}
+  .lrow{display:flex;align-items:center;gap:12px;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:11px 15px}
+  .lrow .rk{color:var(--gray);width:22px;flex:none;text-align:center;font-weight:700}
+  .lrow .nm{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lrow .pt{font-family:var(--voice);font-weight:700;font-size:1.3rem;color:var(--gold);flex:none}
+  .lrow.top1{border-color:var(--pumpkin);box-shadow:0 0 0 1px var(--pumpkin),0 0 20px rgba(232,112,26,.22)}
+  .lrow.me{outline:1px dashed var(--pumpkin-2)}
+
+  .verdict{font-family:var(--voice);font-weight:700;line-height:1;margin:6px 0;animation:pop .35s cubic-bezier(.2,.9,.3,1.3)}
+  .verdict.good{color:var(--poison)} .verdict.bad{color:var(--blood)}
+  @keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:none;opacity:1}}
+  .dblflag{font-family:var(--ui);color:var(--gold);letter-spacing:.14em;text-transform:uppercase;font-size:.76rem;margin-bottom:4px;font-weight:700}
+  .art{display:flex;justify-content:center;margin:-2px 0 2px}
+  .art svg{width:84px;height:84px;filter:drop-shadow(0 0 10px rgba(232,112,26,.3))}
+  .winner{font-family:var(--voice);font-weight:700;font-size:clamp(1.8rem,6vw,2.8rem);color:var(--pumpkin);
+    text-shadow:0 0 20px rgba(232,112,26,.4);animation:pop .45s cubic-bezier(.2,.9,.3,1.3)}
+  .hint{color:var(--gray);font-size:.82rem;line-height:1.45}
+  .seg{display:inline-flex;gap:4px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:4px}
+  .seg button{background:transparent;padding:7px 12px;border-radius:7px;font-size:.82rem;color:var(--gray)}
+  .seg button.on{background:#3a3447;color:var(--sand)}
+
+  .brand{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:28px;color:var(--gray);font-size:.78rem}
+  .brand .mark{font-weight:700;letter-spacing:.02em;color:#fff;text-transform:lowercase}
+  .conn{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:40;background:#2a1620;border:1px solid var(--blood);
+    color:#ffd4da;border-radius:999px;padding:7px 15px;font-size:.78rem;display:none}
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+  .confetti span{position:absolute;top:-26px;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(110vh) rotate(360deg);opacity:.25}}
+  .bat{position:fixed;z-index:0;pointer-events:none;color:#120e16;opacity:.5;animation:drift linear infinite}
+  @keyframes drift{0%{transform:translate(-8vw,8vh)}50%{transform:translate(55vw,-6vh)}100%{transform:translate(112vw,10vh)}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+  .setup code{background:#1b1822;border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-size:.85em}
+</style>
+</head>
+<body>
+<div class="fog" aria-hidden="true"></div>
+<div class="wrap"><div class="main" id="app"><p class="sub center">Loading…</p></div>
+  <div class="brand"><span>Hosted by</span><span class="mark">sapience ai</span></div>
+</div>
+<div class="conn" id="conn">Reconnecting…</div>
+<div id="confettiHost"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+/* ===================== CONTENT ===================== */
+const ART={
+ horror:'<svg viewBox="0 0 120 120" fill="none"><circle cx="58" cy="60" r="34" stroke="#E8701A" stroke-width="4"/><circle cx="58" cy="60" r="7" fill="#E8701A"/><g fill="#ffa24d"><circle cx="58" cy="34" r="6"/><circle cx="84" cy="60" r="6"/><circle cx="58" cy="86" r="6"/><circle cx="32" cy="60" r="6"/></g><path d="M84 84c0-9 6-15 13-15s13 6 13 15v20l-4-3-4 3-5-3-4 3-5-3-4 3z" fill="#FFFBF4"/><circle cx="93" cy="82" r="2" fill="#222"/><circle cx="102" cy="82" r="2" fill="#222"/></svg>',
+ music:'<svg viewBox="0 0 120 120" fill="none"><circle cx="54" cy="64" r="36" fill="#2f2a3b" stroke="#5A2D82" stroke-width="3"/><circle cx="54" cy="64" r="19" fill="none" stroke="#D7C6F7" stroke-width="2" opacity=".6"/><circle cx="54" cy="64" r="7" fill="#E8701A"/><path d="M80 30v30" stroke="#7A9B7E" stroke-width="4" stroke-linecap="round"/><path d="M80 30c8-2 14 0 14 0" stroke="#7A9B7E" stroke-width="4" stroke-linecap="round"/><circle cx="76" cy="60" r="6" fill="#7A9B7E"/></svg>'
+};
+const QUESTIONS=[
+ {cat:'Horror Movies',art:'horror',prompt:'In <em>Hocus Pocus</em>, the Sanderson sisters stay young by stealing what from children?',options:['Their life force','Their shadows','Their voices','Their memories'],correct:0},
+ {cat:'Horror Movies',art:'horror',prompt:'What 1978 John Carpenter film introduced masked killer Michael Myers?',options:['Scream','Halloween','Friday the 13th','A Nightmare on Elm Street'],correct:1},
+ {cat:'Horror Movies',art:'horror',prompt:'In <em>The Nightmare Before Christmas</em>, what is the Pumpkin King’s full name?',options:['Oogie Boogie','Victor Van Dort','Jack Skellington','Edward Scissorhands'],correct:2},
+ {cat:'Horror Movies',art:'horror',prompt:'This 2017 Stephen King adaptation is the highest-grossing horror film of all time.',options:['The Exorcist','Get Out','A Quiet Place','It'],correct:3},
+ {cat:'Spooky Tunes',art:'music',prompt:'“’Cause this is thriller, thriller night…” — who recorded this 1983 smash?',options:['Michael Jackson','Prince','Lionel Richie','Rick James'],correct:0},
+ {cat:'Spooky Tunes',art:'music',prompt:'What 1962 novelty song by Bobby “Boris” Pickett is the ultimate Halloween-party staple?',options:['The Time Warp','Monster Mash','Werewolves of London','Spooky Scary Skeletons'],correct:1},
+ {cat:'Spooky Tunes',art:'music',prompt:'Ray Parker Jr. asked “Who ya gonna call?” in the theme to which 1984 film?',options:['Beetlejuice','Gremlins','Ghostbusters','The Lost Boys'],correct:2},
+ {cat:'Spooky Tunes',art:'music',prompt:'“I always feel like somebody’s watching me” — name this 1984 Rockwell hit.',options:['Thriller','Private Eyes','Every Breath You Take','Somebody’s Watching Me'],correct:3},
+ {cat:'Candy Corner',prompt:'Name the three colors of a classic piece of candy corn, bottom to top.',options:['Yellow, orange, white','Red, orange, yellow','Orange, white, brown','Yellow, white, green'],correct:0},
+ {cat:'Candy Corner',prompt:'For most years running, this is the best-selling Halloween candy in the U.S.',options:['Snickers','Reese’s Peanut Butter Cups','M&M’s','Candy corn'],correct:1},
+ {cat:'Candy Corner',prompt:'This bar was named after a favorite horse owned by the Mars family.',options:['Milky Way','Twix','Snickers','3 Musketeers'],correct:2},
+ {cat:'Candy Corner',prompt:'When invented in the 1880s, candy corn was originally sold under what farm-themed name?',options:['Butter Cream','Harvest Kernels','Candy Maize','Chicken Feed'],correct:3},
+ {cat:'Famous Costumes',prompt:'A white bedsheet with two eye-holes is the no-effort costume for what?',options:['A ghost','A mummy','A zombie','A skeleton'],correct:0},
+ {cat:'Famous Costumes',prompt:'Striped shirt, bobble hat, round glasses — which “find me in the crowd” character?',options:['Carmen Sandiego','Waldo (Wally)','The Hamburglar','Mario'],correct:1},
+ {cat:'Famous Costumes',prompt:'Black cape, slicked widow’s peak, and fangs make you which Transylvanian count?',options:['The Grim Reaper','A witch','Dracula','Frankenstein’s monster'],correct:2},
+ {cat:'Famous Costumes',prompt:'In 2023, a wave of all-pink costumes swept Halloween thanks to which blockbuster movie?',options:['Oppenheimer','Mean Girls','Legally Blonde','Barbie'],correct:3},
+ {cat:'Monsters & Myths',prompt:'Under a full moon, a human transforms into this howling monster.',options:['A werewolf','A vampire','A banshee','A goblin'],correct:0},
+ {cat:'Monsters & Myths',prompt:'Mary Shelley’s 1818 novel introduced which reanimated creature stitched from parts?',options:['Dracula','Frankenstein’s monster','The Invisible Man','The Mummy'],correct:1},
+ {cat:'Monsters & Myths',prompt:'In folklore, what pungent kitchen staple is said to ward off vampires?',options:['Onions','Rosemary','Garlic','Chili peppers'],correct:2},
+ {cat:'Monsters & Myths',prompt:'A reanimated ancient Egyptian corpse wrapped in linen bandages is known as what?',options:['A ghoul','A lich','A wraith','A mummy'],correct:3},
+ {cat:'Halloween Lore',prompt:'Before pumpkins, the Irish carved lanterns out of what humbler vegetable?',options:['Turnips','Potatoes','Gourds','Beets'],correct:0},
+ {cat:'Halloween Lore',prompt:'Halloween traces back to which ancient Celtic festival marking the end of harvest?',options:['Beltane','Samhain','Yule','Walpurgis Night'],correct:1,dbl:true},
+ {cat:'Halloween Lore',prompt:'The fear of Halloween itself has a name — what is this phobia called?',options:['Nyctophobia','Phasmophobia','Samhainophobia','Wiccaphobia'],correct:2,dbl:true}
+];
+const BASE=1000, L=['A','B','C','D'];
+
+/* ===================== FIREBASE ===================== */
+let db=null, roomRef=null, roomCode=null, data=null;
+let role=null;            // 'host' | 'player'
+let me={pid:null, name:null};
+let answerKey={};         // host-only: {qi: correctIndex}, kept out of DB until reveal
+let hostTO=null;
+
+const app=document.getElementById('app');
+const cfg=window.FIREBASE_CONFIG||{};
+const configured = cfg.apiKey && cfg.apiKey.indexOf('PASTE')<0 && cfg.databaseURL && cfg.databaseURL.indexOf('PASTE')<0;
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
+function rid(n){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<(n||4);i++)s+=c[Math.floor(Math.random()*c.length)];return s;}
+
+function initFirebase(){
+  try{ firebase.initializeApp(cfg); db=firebase.database(); return true; }catch(e){ console.error(e); return false; }
+}
+
+/* ===================== BOOT ===================== */
+window.addEventListener('DOMContentLoaded',()=>{
+  bats();
+  if(!configured){ renderSetup(); return; }
+  if(!initFirebase()){ app.innerHTML=msg('Setup needed','Firebase didn’t initialize — double-check the config block at the top of index.html.'); return; }
+  // resume?
+  try{
+    const h=localStorage.getItem('mm_host');
+    const p=JSON.parse(localStorage.getItem('mm_player')||'null');
+    if(h){ roomCode=h; role='host'; try{answerKey=JSON.parse(localStorage.getItem('mm_key')||'{}')}catch(e){} attach(); return; }
+    if(p&&p.code&&p.pid){ roomCode=p.code; me={pid:p.pid,name:p.name}; role='player'; attach(); return; }
+  }catch(e){}
+  renderLanding();
+});
+
+function attach(){
+  if(roomRef) roomRef.off();
+  roomRef=db.ref('rooms/'+roomCode);
+  roomRef.on('value',snap=>{ data=snap.val(); if(data===null && role){ /* room gone */ } render(); },
+    err=>{ document.getElementById('conn').style.display='block'; });
+  db.ref('.info/connected').on('value',s=>{ document.getElementById('conn').style.display=s.val()?'none':'block'; });
+}
+
+/* ===================== HOST ===================== */
+function hostCreate(){
+  roomCode=rid(4); role='host'; answerKey={};
+  localStorage.setItem('mm_host',roomCode); localStorage.setItem('mm_key','{}');
+  db.ref('rooms/'+roomCode).set({createdAt:Date.now(),phase:'lobby',qIndex:-1,qSeconds:20});
+  attach();
+}
+function hostStart(){ db.ref('rooms/'+roomCode).update({scoresReset:Date.now()}); resetScores().then(()=>hostNext(-1)); }
+function resetScores(){
+  return db.ref('rooms/'+roomCode+'/players').once('value').then(s=>{
+    const u={}; s.forEach(c=>{u[c.key+'/score']=0;}); return s.numChildren()?db.ref('rooms/'+roomCode+'/players').update(u):null;
+  });
+}
+function hostNext(force){
+  if(hostTO){clearTimeout(hostTO);hostTO=null;}
+  const qi=(typeof force==='number')?force+1:(data.qIndex+1);
+  if(qi>=QUESTIONS.length){ return hostFinal(); }
+  const q=QUESTIONS[qi];
+  const order=[0,1,2,3].sort(()=>Math.random()-0.5);
+  const options=order.map(k=>q.options[k]);
+  const correctIndex=order.indexOf(q.correct);
+  answerKey[qi]=correctIndex; localStorage.setItem('mm_key',JSON.stringify(answerKey));
+  const qSeconds=(data&&data.qSeconds)||20;
+  db.ref('rooms/'+roomCode).update({
+    phase:'question', qIndex:qi,
+    current:{cat:q.cat,art:q.art||null,prompt:q.prompt,options,dbl:!!q.dbl,deadline:Date.now()+qSeconds*1000,correct:null,stats:null}
+  });
+  sfxOrgan();
+  hostTO=setTimeout(hostReveal,qSeconds*1000+300);
+}
+function hostReveal(){
+  if(hostTO){clearTimeout(hostTO);hostTO=null;}
+  if(!data||data.phase!=='question') return;
+  const qi=data.qIndex, cur=data.current, ci=answerKey[qi];
+  db.ref('rooms/'+roomCode+'/answers/'+qi).once('value').then(s=>{
+    const ans=s.val()||{}, dur=((data.qSeconds)||20)*1000, su={}; let answered=0,correct=0;
+    db.ref('rooms/'+roomCode+'/players').once('value').then(ps=>{
+      const scores={}; ps.forEach(c=>scores[c.key]=(c.val().score||0));
+      Object.keys(ans).forEach(pid=>{
+        const a=ans[pid]; if(!a||typeof a.choice!=='number')return; answered++;
+        if(a.choice===ci){ correct++;
+          const frac=clamp((cur.deadline-(a.at||cur.deadline))/dur,0,1);
+          const pts=Math.round(BASE*(0.5+0.5*frac))*(cur.dbl?2:1);
+          scores[pid]=(scores[pid]||0)+pts; su[pid+'/score']=scores[pid];
+        }
+      });
+      const upd={phase:'reveal','current/correct':ci,'current/stats':{answered,correct,total:Object.keys(data.players||{}).length}};
+      db.ref('rooms/'+roomCode).update(upd);
+      if(Object.keys(su).length) db.ref('rooms/'+roomCode+'/players').update(su);
+      sfxGong();
+    });
+  });
+}
+function hostFinal(){ db.ref('rooms/'+roomCode).update({phase:'final'}); }
+function hostSetTime(s){ db.ref('rooms/'+roomCode).update({qSeconds:s}); }
+function hostEnd(){ if(confirm('End this game and wipe the room?')){ db.ref('rooms/'+roomCode).remove(); localStorage.removeItem('mm_host'); localStorage.removeItem('mm_key'); location.reload(); } }
+
+/* ===================== PLAYER ===================== */
+function playerJoin(code,name){
+  code=String(code||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
+  name=String(name||'').trim().slice(0,24)||('Guest '+rid(3));
+  if(code.length<4){ flash('Enter the 4-character room code'); return; }
+  db.ref('rooms/'+code).once('value').then(s=>{
+    if(!s.exists()){ flash('No game found with that code'); return; }
+    const pid=rid(9); me={pid,name}; roomCode=code; role='player';
+    localStorage.setItem('mm_player',JSON.stringify({code,pid,name}));
+    db.ref('rooms/'+code+'/players/'+pid).set({name,score:0,joinedAt:Date.now()}).then(attach);
+  });
+}
+function playerAnswer(i){
+  if(!data||data.phase!=='question')return;
+  const qi=data.qIndex;
+  if(myAnswer(qi)!=null)return;
+  db.ref('rooms/'+roomCode+'/answers/'+qi+'/'+me.pid).set({choice:i,at:Date.now()});
+}
+function myAnswer(qi){ return data&&data.answers&&data.answers[qi]&&data.answers[qi][me.pid]?data.answers[qi][me.pid].choice:null; }
+function playerLeave(){ localStorage.removeItem('mm_player'); location.reload(); }
+
+/* ===================== RENDER ===================== */
+let liveTimer=setInterval(()=>{ if(data&&data.phase==='question') render(); },400);
+
+function render(){
+  if(role==='host')return renderHost();
+  if(role==='player')return renderPlayer();
+  renderLanding();
+}
+function msg(t,s){ return '<div class="card center"><div class="tag">'+esc(t)+'</div><p class="sub" style="margin-top:8px">'+esc(s)+'</p></div>'; }
+function flash(t){ const e=document.getElementById('flash'); if(e){e.textContent=t;e.style.display='block';} }
+
+function renderSetup(){
+  app.className='main setup';
+  app.innerHTML='<div class="kicker center">Monster Mash Trivia</div><h1 class="center"><span class="m">One-time</span> setup</h1>'+
+    '<div class="card"><p class="sub">This game needs a free Firebase project for live scoring. Open <code>index.html</code>, paste your Firebase config into the block near the top (it starts with <code>window.FIREBASE_CONFIG</code>), and reload. Full steps are in the <code>README</code>.</p></div>';
+}
+function renderLanding(){
+  app.className='main';
+  app.innerHTML=
+    '<div class="center"><div class="kicker">Team Trivia · All Hallows’ Eve</div>'+
+    '<h1><span class="m">Monster</span> <span class="t">Mash</span> Trivia</h1>'+
+    '<p class="sub" style="margin-top:8px">A live, play-along Halloween quiz. Host it on your screen; everyone joins from any device with a room code.</p></div>'+
+    '<div class="card center"><div class="row"><button class="btn primary big" id="hostBtn">🎃 Host a game</button>'+
+      '<button class="btn violet big" id="joinBtn2">👻 Join a game</button></div></div>';
+  byId('hostBtn',()=>hostCreate());
+  byId('joinBtn2',()=>renderJoin());
+}
+function renderJoin(){
+  app.className='main';
+  app.innerHTML=
+    '<div class="center"><div class="kicker">Join the game</div><h1><span class="t">Monster Mash</span></h1></div>'+
+    '<div class="card"><p id="flash" class="sub center" style="display:none;color:var(--blood)"></p>'+
+      '<div style="display:flex;flex-direction:column;gap:12px">'+
+        '<input class="txt code" id="jCode" maxlength="4" placeholder="CODE" autocapitalize="characters" autocomplete="off">'+
+        '<input class="txt" id="jName" maxlength="24" placeholder="Your name" autocomplete="off">'+
+        '<button class="btn primary big" id="jGo">Join →</button>'+
+        '<button class="btn" id="jBack">← Back</button>'+
+      '</div></div>';
+  byId('jGo',()=>playerJoin(val('jCode'),val('jName')));
+  byId('jBack',()=>renderLanding());
+  const c=document.getElementById('jCode'); if(c)c.focus();
+  const n=document.getElementById('jName'); if(n)n.addEventListener('keydown',e=>{if(e.key==='Enter')playerJoin(val('jCode'),val('jName'));});
+}
+
+/* ---------- HOST ---------- */
+function renderHost(){
+  app.className='main';
+  if(!data){ app.innerHTML=msg('Setting up the room…',''); return; }
+  const players=plist();
+  if(data.phase==='lobby'){
+    app.innerHTML=
+      '<div class="center"><div class="kicker">Host screen · share this</div><h1><span class="m">Monster Mash</span></h1></div>'+
+      '<div class="card center"><p class="sub">Players join at this site with the code:</p>'+
+        '<div style="margin:12px 0"><span class="codebox"><span class="hint">ROOM CODE</span><span class="roomcode">'+esc(roomCode)+'</span></span></div>'+
+        '<div><span class="pill">👻 In the room: <span class="n">'+players.length+'</span></span></div>'+
+        '<div class="chips" style="margin-top:12px">'+(players.length?players.map(p=>'<span class="chip">'+esc(p.name)+'</span>').join(''):'<span class="hint">Waiting for players…</span>')+'</div>'+
+        '<div class="hint" style="margin-top:16px">Seconds per question: <span class="seg">'+[10,15,20,30].map(s=>'<button class="'+(data.qSeconds===s?'on':'')+'" data-sec="'+s+'">'+s+'s</button>').join('')+'</span></div>'+
+        '<div class="row" style="margin-top:16px"><button class="btn primary big" id="startBtn"'+(players.length?'':' disabled')+'>Start Game →</button></div>'+
+        '<div style="margin-top:10px"><button class="btn" id="endBtn" style="font-size:.78rem;padding:7px 12px">End room</button></div>'+
+      '</div>';
+    wireHost();return;
+  }
+  if(data.phase==='question'){
+    const c=data.current, ans=answeredCount(), rem=Math.max(0,Math.ceil((c.deadline-Date.now())/1000)), frac=clamp((c.deadline-Date.now())/((data.qSeconds||20)*1000),0,1);
+    app.innerHTML=
+      hdr(data.qIndex)+
+      '<div class="card">'+(c.dbl?'<div class="dblflag">★ Final Round · Double points ★</div>':'')+
+        (c.art&&ART[c.art]?'<div class="art">'+ART[c.art]+'</div>':'')+
+        '<div class="tag">'+esc(c.cat)+'</div><div class="prompt">'+c.prompt+'</div>'+
+        '<div class="timerbar"><i style="width:'+(frac*100)+'%"></i></div>'+
+        '<div style="display:flex;justify-content:space-between;margin-top:6px"><span class="pill">⏱ <span class="n">'+rem+'s</span></span><span class="pill">✍️ <span class="n">'+ans+'</span> / '+players.length+'</span></div>'+
+        '<div class="opts">'+c.options.map((o,i)=>'<div class="opt host '+'abcd'[i]+'"><span class="lk">'+L[i]+'</span>'+esc(o)+'</div>').join('')+'</div>'+
+        '<div class="row" style="margin-top:16px"><button class="btn primary" id="revealBtn">Reveal →</button></div>'+
+      '</div>';
+    wireHost();return;
+  }
+  if(data.phase==='reveal'){
+    const c=data.current, st=c.stats||{}, lb=board(10);
+    app.innerHTML=
+      hdr(data.qIndex)+
+      '<div class="card"><div class="tag">'+esc(c.cat)+(c.dbl?' · ★ Double':'')+'</div>'+
+        '<div class="prompt" style="font-size:1.2rem">'+c.prompt+'</div>'+
+        '<div class="opts">'+c.options.map((o,i)=>'<div class="opt '+'abcd'[i]+(i===c.correct?' right':' dim')+'"><span class="lk">'+L[i]+'</span>'+esc(o)+'</div>').join('')+'</div>'+
+        '<p class="sub" style="margin-top:12px">'+(st.correct||0)+' of '+(st.answered||0)+' correct.</p></div>'+
+      '<div class="card"><div class="tag">'+(data.qIndex>=QUESTIONS.length-1?'Final standings':'Leaderboard')+'</div>'+listHtml(lb,null)+'</div>'+
+      '<div class="row" style="margin-top:4px"><button class="btn primary big" id="nextBtn">'+(data.qIndex>=QUESTIONS.length-1?'Final Results →':'Next Question →')+'</button></div>';
+    wireHost();return;
+  }
+  if(data.phase==='final'){
+    const lb=board(20), w=winners(lb);
+    app.innerHTML='<h1 class="center">Final Results</h1>'+
+      '<div class="card center">'+winBanner(w)+listHtml(lb,null)+'</div>'+
+      '<div class="row"><button class="btn" id="againBtn">↺ Play again (same players)</button><button class="btn" id="endBtn">End room</button></div>';
+    if(w.length===1) confetti();
+    wireHost();return;
+  }
+}
+function hdr(qi){return '<div style="display:flex;justify-content:space-between"><span class="kicker">Question '+(qi+1)+' / '+QUESTIONS.length+'</span><span class="kicker">Room '+esc(roomCode)+'</span></div>';}
+function answeredCount(){ const qi=data.qIndex, a=(data.answers&&data.answers[qi])||{}; let n=0; Object.keys(a).forEach(k=>{if(a[k]&&typeof a[k].choice==='number')n++;}); return n; }
+
+/* ---------- PLAYER ---------- */
+function renderPlayer(){
+  app.className='main';
+  if(!data){ app.innerHTML=msg('Joining…','');return; }
+  if(data.phase==='lobby'){
+    app.innerHTML='<h1 class="center">You’re in!</h1><div class="card center"><span class="chip me">'+esc(me.name)+'</span>'+
+      '<p class="sub" style="margin-top:14px">Hang tight — questions pop up here when the host starts.</p>'+
+      '<div style="margin-top:10px"><span class="pill">👻 In the room: <span class="n">'+plist().length+'</span></span></div>'+
+      '<div style="margin-top:14px"><button class="btn" id="leaveBtn" style="font-size:.78rem;padding:7px 12px">Leave</button></div></div>';
+    byId('leaveBtn',playerLeave);return;
+  }
+  if(data.phase==='question'){
+    const c=data.current, qi=data.qIndex, mine=myAnswer(qi), done=mine!=null;
+    const rem=Math.max(0,Math.ceil((c.deadline-Date.now())/1000)), frac=clamp((c.deadline-Date.now())/((data.qSeconds||20)*1000),0,1);
+    app.innerHTML=
+      '<div style="display:flex;justify-content:space-between"><span class="kicker">Q'+(qi+1)+' / '+QUESTIONS.length+'</span><span class="pill">⏱ <span class="n">'+rem+'s</span></span></div>'+
+      '<div class="card">'+(c.dbl?'<div class="dblflag">★ Double points ★</div>':'')+
+        '<div class="tag">'+esc(c.cat)+'</div><div class="prompt" style="font-size:1.1rem">'+c.prompt+'</div>'+
+        '<div class="timerbar"><i style="width:'+(frac*100)+'%"></i></div>'+
+        '<div class="opts">'+c.options.map((o,i)=>{const pk=done&&mine===i,dm=done&&!pk;return '<button class="opt '+'abcd'[i]+(pk?' pick':'')+(dm?' dim':'')+'" data-ans="'+i+'"'+(done?' disabled':'')+'><span class="lk">'+L[i]+'</span>'+esc(o)+'</button>';}).join('')+'</div>'+
+        (done?'<p class="sub center" style="margin-top:12px">Locked in — hang tight! ✅</p>':'<p class="hint center" style="margin-top:12px">Tap your answer. Faster correct = more points.</p>')+
+      '</div>';
+    wirePlayer();return;
+  }
+  if(data.phase==='reveal'){
+    const c=data.current, qi=data.qIndex, mine=myAnswer(qi), good=mine!=null&&mine===c.correct, myScore=(data.players&&data.players[me.pid]&&data.players[me.pid].score)||0;
+    if(P_lastReveal!==qi){ P_lastReveal=qi; if(mine!=null){ good?sfxCorrect():sfxWrong(); } }
+    app.innerHTML=
+      '<div class="card center">'+
+        (mine!=null?'<div class="verdict '+(good?'good':'bad')+'" style="font-size:clamp(2.2rem,8vw,3rem)">'+(good?'Correct!':'Nope')+'</div>'+
+          (good?'':'<p class="sub">It was <b>'+esc(c.options[c.correct])+'</b></p>')
+          :'<div class="verdict bad" style="font-size:2rem">Missed it</div><p class="sub">The answer was <b>'+esc(c.options[c.correct])+'</b></p>')+
+        '<div style="margin-top:12px"><span class="pill">Your score: <span class="n">'+myScore+'</span></span></div></div>'+
+      '<div class="card"><div class="tag">Leaderboard</div>'+listHtml(board(10),me.name)+'</div>';
+    return;
+  }
+  if(data.phase==='final'){
+    const lb=board(20), w=winners(lb), myScore=(data.players&&data.players[me.pid]&&data.players[me.pid].score)||0;
+    app.innerHTML='<h1 class="center">Final Results</h1><div class="card center">'+winBanner(w)+
+      '<div style="margin:10px 0"><span class="pill">You finished with <span class="n">'+myScore+'</span></span></div>'+listHtml(lb,me.name)+'</div>';
+    if(w.length===1)confetti();
+    return;
+  }
+}
+let P_lastReveal=-1;
+
+/* ---------- shared ---------- */
+function plist(){ const p=(data&&data.players)||{}; return Object.keys(p).map(k=>({pid:k,name:p[k].name,score:p[k].score||0})); }
+function board(n){ return plist().sort((a,b)=>b.score-a.score).slice(0,n); }
+function winners(lb){ if(!lb.length)return[]; const top=lb[0].score; return top>0?lb.filter(x=>x.score===top):[]; }
+function listHtml(lb,meName){
+  if(!lb.length)return '<p class="hint">No scores yet.</p>';
+  return '<div class="lead">'+lb.map((r,i)=>'<div class="lrow'+(i===0?' top1':'')+(meName&&r.name===meName?' me':'')+'"><span class="rk">'+(i===0?'♛':(i+1))+'</span><span class="nm">'+esc(r.name)+'</span><span class="pt">'+r.score+'</span></div>').join('')+'</div>';
+}
+function winBanner(w){ if(!w.length)return '<div class="winner" style="font-size:clamp(1.6rem,5vw,2rem)">Game over</div>'; if(w.length===1)return '<div class="winner">🎃 '+esc(w[0].name)+' wins! 🎃</div>'; return '<div class="winner" style="font-size:clamp(1.6rem,5vw,2rem)">It’s a tie!</div>'; }
+
+function wireHost(){
+  byId('startBtn',hostStart); byId('revealBtn',hostReveal); byId('nextBtn',()=>hostNext()); byId('againBtn',hostStart); byId('endBtn',hostEnd);
+  document.querySelectorAll('[data-sec]').forEach(b=>b.addEventListener('click',e=>hostSetTime(+e.currentTarget.dataset.sec)));
+}
+function wirePlayer(){ document.querySelectorAll('[data-ans]').forEach(b=>b.addEventListener('click',e=>playerAnswer(+e.currentTarget.dataset.ans))); }
+function byId(i,fn){const e=document.getElementById(i);if(e)e.addEventListener('click',fn);}
+function val(i){const e=document.getElementById(i);return e?e.value:'';}
+
+/* ===================== SOUND ===================== */
+let actx; function ac(){try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx;}catch(e){return null;}}
+function tones(seq){const a=ac();if(!a)return;let t=a.currentTime+.01;seq.forEach(s=>{const o=a.createOscillator(),g=a.createGain();o.type=s.type||'sine';o.frequency.setValueAtTime(s.f,t);if(s.f2)o.frequency.exponentialRampToValueAtTime(s.f2,t+s.d);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(s.v||.08,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+s.d);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+s.d+.03);t+=(s.gap!=null?s.gap:s.d);});}
+function chord(fs,d,v){const a=ac();if(!a)return;const t=a.currentTime+.01;fs.forEach(f=>{const o=a.createOscillator(),g=a.createGain();o.type='sawtooth';o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v||.045,t+.03);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+d+.05);});}
+function sfxCorrect(){tones([{f:523,d:.12,gap:.1,type:'triangle'},{f:659,d:.12,gap:.1,type:'triangle'},{f:784,d:.26,type:'triangle',v:.1}]);}
+function sfxWrong(){tones([{f:196,d:.2,gap:.17,type:'sawtooth',v:.08},{f:146,f2:110,d:.34,type:'sawtooth',v:.08}]);}
+function sfxOrgan(){chord([146.83,174.61,220],.9,.045);}
+function sfxGong(){tones([{f:110,f2:70,d:.8,type:'sine',v:.12}]);}
+
+/* ===================== DECOR ===================== */
+function bats(){ if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  const s='<svg width="30" height="16" viewBox="0 0 30 16" fill="currentColor"><path d="M15 3c1-2 3-3 4-1 1-3 4-2 5 0 2-1 4 0 4 2-2 0-3 1-4 3-1-2-2-2-3-1 0-1-1-1-2 0-1-1-2-1-2 1-1-2-2-2-3 0-1-3-3-3-4 0 0-2-2-2-4 1 2-2 4-2 5 0 1-2 3-1 4 1Z"/></svg>';
+  for(let i=0;i<3;i++){const b=document.createElement('div');b.className='bat';b.setAttribute('aria-hidden','true');b.style.top=(Math.random()*70)+'vh';b.style.animationDuration=(18+Math.random()*16)+'s';b.style.animationDelay=(-Math.random()*20)+'s';b.innerHTML=s;document.body.appendChild(b);}
+}
+function confetti(){ if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  const box=document.createElement('div');box.className='confetti';box.setAttribute('aria-hidden','true');
+  const bits=['🎃','★','🦇','🍬','👻'];
+  for(let i=0;i<30;i++){const s=document.createElement('span');s.textContent=bits[i%bits.length];s.style.left=(Math.random()*100)+'vw';s.style.fontSize=(.9+Math.random()*1.3)+'rem';s.style.animationDuration=(2.6+Math.random()*2.2)+'s';s.style.animationDelay=(Math.random()*.7)+'s';box.appendChild(s);}
+  document.getElementById('confettiHost').appendChild(box);setTimeout(()=>box.remove(),5600);
+}
+</script>
+</body>
+</html>
